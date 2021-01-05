@@ -370,6 +370,10 @@ C.添加表单验证的步骤
 设置请求的根路径：axios.defaults.baseURL = 'http://127.0.0.1:8888/api/private/v1/';
 挂载axios：Vue.prototype.$http = axios;
 
+![image-20210105210832287](assets/image-20210105210832287.png)
+
+
+
 5.配置弹窗提示：
 在plugins文件夹中打开element.js文件，进行elementui的按需导入
 import {Message} from 'element-ui'
@@ -378,11 +382,129 @@ import {Message} from 'element-ui'
 
 ## 3.登录成功之后的操作
 
+A.登录成功之后，需要将后台返回的token保存到sessionStorage中操作完毕之后，需要跳转到/home
 
+```js
+login() {
+      //点击登录的时候先调用validate方法验证表单内容是否有误
+      this.$refs.LoginFormRef.validate(async valid => {
+        console.log(this.loginFormRules)
+        //如果valid参数为true则验证通过
+        if (!valid) {
+          return
+        }
 
+        //发送请求进行登录
+        const { data: res } = await this.$http.post('login', this.loginForm)
+        //   console.log(res);
+        if (res.meta.status !== 200) {
+          return this.$message.error('登录失败:' + res.meta.msg) //console.log("登录失败:"+res.meta.msg)
+        }
 
+        this.$message.success('登录成功')
+        console.log(res)
+        //保存token
+        window.sessionStorage.setItem('token', res.data.token)
+        // 导航至/home
+        this.$router.push('/home')
+      })
+    }
+```
 
+添加一个组件Home.vue，并为之添加规则
 
+```
+<template>
+    <div>
+        this is home
+        <el-button type="info" @click="logout"> 退出 </el-button>
+    </div>
+</template>
 
+<script>
+export default {
+  methods: {
+    logout() {
+      window.sessionStorage.clear()
+      this.$router.push('/login')
+    }
+  }
+}
+</script>
 
+<style lang='less' scoped>
+</style>
+```
+
+添加路由规则
+
+```
+const routes = [
+  {
+    path: '/',
+    redirect: '/login'
+  },
+  {
+    path: '/login',
+    component: Login
+  },
+  {
+    path: '/home',
+    component: Home
+  }
+]
+
+```
+
+添加路由守卫
+如果用户没有登录，不能访问/home,如果用户通过url地址直接访问，则强制跳转到登录页面
+打开router.js
+
+```
+import Vue from 'vue'
+import Router from 'vue-router'
+import Login from './components/Login.vue'
+import Home from './components/Home.vue'
+
+Vue.use(Router)
+
+const router = new Router({
+  routes: [
+    { path:'/', redirect:'/login'},
+    { path:'/login' , component:Login },
+    { path:'/home' , component:Home}
+  ]
+})
+
+//挂载路由导航守卫,to表示将要访问的路径，from表示从哪里来，next是下一个要做的操作
+router.beforeEach((to,from,next)=>{ 
+  if(to.path === '/login')
+    return next();
+  
+  //获取token
+  const tokenStr = window.sessionStorage.getItem('token');
+
+  if(!tokenStr)
+    return next('/login');
+
+  next();
+
+})
+
+export default router 
+```
+
+实现退出功能
+在Home组件中添加一个退出功能按钮,给退出按钮添加点击事件，添加事件处理代码如下：
+
+```
+export default {
+    methods:{
+        logout(){
+            window.sessionStorage.clear();
+            this.$router.push('/login');
+        }
+    }
+}
+```
 

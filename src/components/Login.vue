@@ -10,7 +10,7 @@
       <el-form :model="loginForm" ref="LoginFormRef" :rules="loginFormRules" label-width="0px" class="login_form">
         <!-- 用户名 -->
         <el-form-item prop="username">
-          <el-input v-model="loginForm.username" prefix-icon="iconfont icon-user" ></el-input>
+          <el-input v-model="loginForm.username" prefix-icon="iconfont icon-user"></el-input>
         </el-form-item>
         <!-- 密码 -->
         <el-form-item prop="password">
@@ -99,6 +99,7 @@ export default {
     background-color: #2b5b6b;
     height: 100%;
   }
+
   .login_box {
     width: 450px;
     height: 300px;
@@ -108,6 +109,7 @@ export default {
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+
     .avatar_box {
       height: 130px;
       width: 130px;
@@ -119,6 +121,7 @@ export default {
       left: 50%;
       transform: translate(-50%, -50%);
       background-color: #fff;
+
       img {
         width: 100%;
         height: 100%;
@@ -127,6 +130,7 @@ export default {
       }
     }
   }
+
   .login_form {
     position: absolute;
     bottom: 0;
@@ -134,6 +138,7 @@ export default {
     padding: 0 20px;
     box-sizing: border-box;
   }
+
   .btns {
     display: flex;
     justify-content: flex-end;
