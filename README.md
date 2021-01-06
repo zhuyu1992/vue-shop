@@ -508,3 +508,144 @@ export default {
 }
 ```
 
+## 4.后台首页基本布局
+
+### 4.1打开Home.vue组件，进行布局，添加样式
+
+### 4.2axios请求拦截器
+
+后台除了登录接口之外，都需要token权限验证，我们可以通过添加axios请求拦截器来添加token，以保证拥有获取数据的权限
+在main.js中添加代码，在将axios挂载到vue原型之前添加下面的代码
+
+```
+//请求在到达服务器之前，先会调用use中的这个回调函数来添加请求头信息
+axios.interceptors.request.use(config=>{
+  //为请求头对象，添加token验证的Authorization字段
+  config.headers.Authorization = window.sessionStorage.getItem("token")
+  return config
+})
+```
+
+### 4.3侧边栏数据的获取和显示
+
+获取数据
+
+```js
+ async getMenuList () {
+      const menu = await this.$http.get('menus')
+      if (menu.data.meta.status !== 200) {
+        return this.$message.error(menu.data.meta.msg)
+      }
+      this.menuList = menu.data.data
+      this.$message.success(menu.data.meta.msg)
+    }
+```
+
+通过双循环显示数据
+
+```html
+  <!-- 一级菜单 -->
+          <el-submenu :index="item.id+''" v-for=" item in menuList" :key="item.id">
+            <!-- 一级菜单模板 -->
+            <template slot="title">
+              <!-- 图标 -->
+              <i class="el-icon-location"></i>
+              <!-- 文本 -->
+              <span>{{item.authName}}</span>
+            </template>
+            <!-- 二级子菜单 -->
+            <el-menu-item :index="subItem.id+''" v-for="subItem in item.children" :key="subItem.id">
+              <!-- 二级菜单模板 -->
+              <template slot="title">
+                <!-- 图标 -->
+                <i class="el-icon-menu"></i>
+                <!-- 文本 -->
+                <span>{{subItem.authName}}</span>
+              </template>
+            </el-menu-item>
+          </el-submenu>
+```
+
+设置激活子菜单样式(todo)
+
+制作侧边菜单栏的伸缩功能
+
+```
+  <!-- 侧边栏,宽度根据是否折叠进行设置 -->
+        <el-aside :width="isCollapse ? '64px':'200px'">
+          <!-- 伸缩侧边栏按钮 -->
+          <div class="toggle-button" @click="toggleCollapse">|||</div>
+          <!-- 侧边栏菜单，:collapse="isCollapse"（设置折叠菜单为绑定的 isCollapse 值），:collapse-transition="false"（关闭默认的折叠动画） -->
+          <el-menu
+          :collapse="isCollapse"
+          :collapse-transition="false"
+          ......
+```
+
+## 5.在后台首页添加子级路由
+
+新增子级路由组件Welcome.vue
+在router.js中导入子级路由组件，并设置路由规则以及子级路由的默认重定向
+打开Home.vue，在main的主体结构中添加一个路由占位符
+
+制作好了Welcome子级路由之后，我们需要将所有的侧边栏二级菜单都改造成子级路由链接
+我们只需要将el-menu的router属性设置为true就可以了，此时当我们点击二级菜单的时候，就会根据菜单的index
+属性进行路由跳转,如: /110,
+使用index id来作为跳转的路径不合适，我们可以重新绑定index的值为  :index="'/'+subItem.path"
+
+```js
+ {
+    path: '/home',
+    component: Home,
+    redirect: '/welcome',
+    children: [
+      {
+        path: '/welcome',
+        component: Welcome
+      },
+      {
+        path: '/users',
+        component: Users
+      },
+      {
+        path: '/roles',
+        component: Roles
+      }
+    ]
+  }
+```
+
+## 6.绘制用户列表基本结构
+
+### 6.1面包屑
+
+```
+ <el-breadcrumb separator="/">
+      <el-breadcrumb-item :to="{ path: '/home' }">首页</el-breadcrumb-item>
+      <el-breadcrumb-item>用户管理</el-breadcrumb-item>
+      <el-breadcrumb-item>用户列表</el-breadcrumb-item>
+    </el-breadcrumb>
+```
+
+### 6.2请求用户数据
+
+```
+ created () {
+    this.getUserList()
+  },
+  methods: {
+    async getUserList () {
+      const { data: res } = await this.$http.get('users', { params: this.queryInfo })
+      if (res.meta.status !== 200) {
+        return this.$message.error(res.meta.msg)
+      }
+      console.log(res)
+      this.$message.success(res.meta.msg)
+      this.totalpage = res.data.total
+      this.userList = res.data.users
+    }
+  }
+```
+
+### 6.3将用户列表数据展示
+
