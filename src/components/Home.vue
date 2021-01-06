@@ -105,15 +105,11 @@ export default {
   .el-aside {
     background-color:#333744;
     color: #333;
-    text-align: center;
-    line-height: 200px;
   }
 
   .el-main {
     background-color:#eaedf1;
     color: #333;
-    text-align: center;
-    line-height: 160px;
   }
 
   body > .el-container {
