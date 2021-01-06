@@ -649,3 +649,111 @@ axios.interceptors.request.use(config=>{
 
 ### 6.3将用户列表数据展示
 
+用户列表显示
+
+```html
+<!-- 用户列表(表格)区域 -->
+<el-table :data="userList" border stripe>
+    <el-table-column type="index"></el-table-column>
+    <el-table-column label="姓名" prop="username"></el-table-column>
+    <el-table-column label="邮箱" prop="email"></el-table-column>
+    <el-table-column label="电话" prop="mobile"></el-table-column>
+    <el-table-column label="角色" prop="role_name"></el-table-column>
+    <el-table-column label="状态">
+        <template slot-scope="scope">
+            <el-switch v-model="scope.row.mg_state"></el-switch>
+        </template>
+    </el-table-column>
+    <el-table-column label="操作" width="180px">
+        <template slot-scope="scope">
+            <!-- 修改 -->
+            <el-button type="primary" icon="el-icon-edit" size='mini'></el-button>
+            <!-- 删除 -->
+            <el-button type="danger" icon="el-icon-delete" size='mini'></el-button>
+            <!-- 分配角色 -->
+            <el-tooltip class="item" effect="dark" content="分配角色" placement="top" :enterable="false">
+                <el-button type="warning" icon="el-icon-setting" size='mini'></el-button>
+            </el-tooltip>
+        </template>
+    </el-table-column>
+</el-table>
+```
+
+实现用户列表分页
+
+```html
+<!-- 分页导航区域 
+@size-change(pagesize改变时触发) 
+@current-change(页码发生改变时触发)
+:current-page(设置当前页码)
+:page-size(设置每页的数据条数)
+:total(设置总页数) -->
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange" :current-page="queryInfo.pagenum" :page-sizes="[1, 2, 5, 10]" :page-size="queryInfo.pagesize" layout="total, sizes, prev, pager, next, jumper" :total="total">
+            </el-pagination>
+```
+
+添加两个事件的事件处理函数@size-change，@current-change
+
+```js
+handleSizeChange(newSize) {
+  //pagesize改变时触发，当pagesize发生改变的时候，我们应该
+  //以最新的pagesize来请求数据并展示数据
+  //   console.log(newSize)
+  this.queryInfo.pagesize = newSize;
+  //重新按照pagesize发送请求，请求最新的数据
+  this.getUserList();  
+},
+handleCurrentChange( current ) {
+  //页码发生改变时触发当current发生改变的时候，我们应该
+  //以最新的current页码来请求数据并展示数据
+  //   console.log(current)
+  this.queryInfo.pagenum = current;
+  //重新按照pagenum发送请求，请求最新的数据
+  this.getUserList();  
+}
+```
+
+###6.4实现更新用户状态
+
+```
+<el-switch v-model="scope.row.mg_state" @change="userStateChanged(scope.row)"></el-switch>
+```
+
+```
+async userStateChanged(row) {
+  //发送请求进行状态修改
+  const { data: res } = await this.$http.put(
+    `users/${row.id}/state/${row.mg_state}`
+  )
+  //如果返回状态为异常状态则报错并返回
+  if (res.meta.status !== 200) {
+    row.mg_state = !row.mg_state
+    return this.$message.error('修改状态失败')
+  }
+  this.$message.success('更新状态成功')
+},
+```
+
+### 6.5实现搜索功能
+
+添加数据绑定，添加搜索按钮的点击事件(当用户点击搜索按钮的时候，调用getUserList方法根据文本框内容重新请求用户列表数据)
+当我们在输入框中输入内容并点击搜索之后，会按照搜索关键字搜索，我们希望能够提供一个X删除搜索关键字并重新获取所有的用户列表数据，只需要给文本框添加clearable属性并添加clear事件，在clear事件中重新请求数据即可
+
+```
+<el-col :span="7">
+    <el-input placeholder="请输入内容" v-model="queryInfo.query" clearable @clear="getUserList">
+        <el-button slot="append" icon="el-icon-search" @click="getUserList"></el-button>
+    </el-input>
+</el-col>
+```
+
+### 6.6实现添加用户
+
+A.当我们点击添加用户按钮的时候，弹出一个对话框来实现添加用户的功能，首先我们需要复制对话框组件的代码并在element.js文件中引入Dialog组件
+
+B.接下来我们要为“添加用户”按钮添加点击事件，在事件中将addDialogVisible设置为true，即显示对话框
+
+C.更改Dialog组件中的内容
+
+
+
