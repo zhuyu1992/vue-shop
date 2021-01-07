@@ -31,11 +31,11 @@
           </template>
         </el-table-column>
         <el-table-column label="操作" width="180px">
-          <template slot-scope="">
+          <template slot-scope="scope">
             <!-- 修改 -->
-            <el-button type="primary" icon="el-icon-edit" size='mini'></el-button>
+            <el-button type="primary" icon="el-icon-edit" size='mini' @click="queryUser(scope.row.id)"></el-button>
             <!-- 删除 -->
-            <el-button type="danger" icon="el-icon-delete" size='mini'></el-button>
+            <el-button type="danger" icon="el-icon-delete" size='mini' @click="deleteUser(scope.row.id)"></el-button>
             <!-- 分配角色 -->
             <el-tooltip class="item" effect="dark" content="分配角色" placement="top" :enterable="false">
               <el-button type="warning" icon="el-icon-setting" size='mini'></el-button>
@@ -73,6 +73,27 @@
         <el-button type="primary" @click="addUser">确 定</el-button>
     </span>
     </el-dialog>
+    <!--修改用户对话框-->
+    <el-dialog
+      title="修改用户"
+      :visible.sync="editDialogVisible"
+      width="30%">
+      <el-form ref="editFormRef" :model="editForm" label-width="80px" :rules="editFormRules">
+        <el-form-item label="用户名称" prop="username">
+          <el-input v-model="editForm.username" disabled></el-input>
+        </el-form-item>
+        <el-form-item label="电话号码" prop="mobile">
+          <el-input v-model="editForm.mobile"></el-input>
+        </el-form-item>
+        <el-form-item label="电子邮件" prop="email">
+          <el-input v-model="editForm.email"></el-input>
+        </el-form-item>
+        </el-form>
+      <span slot="footer" class="dialog-footer">
+       <el-button @click="editDialogVisible = false">取 消</el-button>
+       <el-button type="primary" @click="updataUser">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -99,6 +120,13 @@ export default {
       cb(new Error('请输入合法的手机号码'))
     }
     return {
+      editDialogVisible: false,
+      editForm: {
+        id: 0,
+        username: '',
+        email: '',
+        mobile: ''
+      },
       queryInfo: {
         query: '',
         pagenum: 1,
@@ -115,10 +143,33 @@ export default {
         email: '',
         mobile: ''
       },
+      // 修改表单的验证规则对象
+      editFormRules: {
+        email: [
+          { required: true, message: '请输入邮箱', trigger: 'blur' },
+          {
+            validator: checkEmail,
+            message: '邮箱格式不正确，请重新输入',
+            trigger: 'blur'
+          }
+        ],
+        mobile: [
+          { required: true, message: '请输入手机号码', trigger: 'blur' },
+          {
+            validator: checkMobile,
+            message: '手机号码不正确，请重新输入',
+            trigger: 'blur'
+          }
+        ]
+      },
       // 添加表单的验证规则对象
       addFormRules: {
         username: [
-          { required: true, message: '请输入用户名称', trigger: 'blur' },
+          {
+            required: true,
+            message: '请输入用户名称',
+            trigger: 'blur'
+          },
           {
             min: 3,
             max: 10,
@@ -127,7 +178,11 @@ export default {
           }
         ],
         password: [
-          { required: true, message: '请输入密码', trigger: 'blur' },
+          {
+            required: true,
+            message: '请输入密码',
+            trigger: 'blur'
+          },
           {
             min: 6,
             max: 15,
@@ -136,12 +191,28 @@ export default {
           }
         ],
         email: [
-          { required: true, message: '请输入邮箱', trigger: 'blur' },
-          { validator: checkEmail, message: '邮箱格式不正确，请重新输入', trigger: 'blur' }
+          {
+            required: true,
+            message: '请输入邮箱',
+            trigger: 'blur'
+          },
+          {
+            validator: checkEmail,
+            message: '邮箱格式不正确，请重新输入',
+            trigger: 'blur'
+          }
         ],
         mobile: [
-          { required: true, message: '请输入手机号码', trigger: 'blur' },
-          { validator: checkMobile, message: '手机号码不正确，请重新输入', trigger: 'blur' }
+          {
+            required: true,
+            message: '请输入手机号码',
+            trigger: 'blur'
+          },
+          {
+            validator: checkMobile,
+            message: '手机号码不正确，请重新输入',
+            trigger: 'blur'
+          }
         ]
       }
     }
@@ -150,6 +221,51 @@ export default {
     this.getUserList()
   },
   methods: {
+    updataUser () {
+      this.$refs.editFormRef.validate(async value => {
+        if (!value) {
+          return this.$message.error('请填写好表单')
+        }
+        const { data: res } = await this.$http.put('users/' + this.editForm.id, this.editForm)
+        if (res.meta.status !== 200) {
+          return this.$message.error(res.meta.msg)
+        }
+        this.getUserList()
+        this.editDialogVisible = false
+      })
+    },
+    // 用户数据回显
+    async queryUser (id) {
+      const { data: res } = await this.$http.get('users/' + id)
+      if (res.meta.status !== 200) {
+        return this.$message.error(res.meta.msg)
+      }
+      this.editForm.id = res.data.id
+      this.editForm.username = res.data.username
+      this.editForm.email = res.data.email
+      this.editForm.mobile = res.data.mobile
+      this.editDialogVisible = true
+    },
+    // 删除用户
+    async deleteUser (id) {
+      const confirmResult = await this.$confirm('是否删除该用户', '删除提示', {
+        confirmButtonText: '确认删除',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).catch(err => err)
+      if (confirmResult !== 'confirm') {
+        return this.$message.info('你已取消了删除')
+      }
+      const { data: res } = await this.$http.delete('users/' + id)
+      console.log(res)
+      if (res.meta.status === 200) {
+        this.$message.success(res.meta.msg)
+        this.getUserList()
+      } else {
+        this.$message.error(res.meta.msg)
+        this.getUserList()
+      }
+    },
     addUser () {
       // 点击确定按钮，添加新用户
       // 调用validate进行表单验证
@@ -158,7 +274,9 @@ export default {
         // 发送请求完成添加用户的操作
         const { data: res } = await this.$http.post('users', this.addForm)
         // 判断如果添加失败，就做提示
-        if (res.meta.status !== 200) { return this.$message.error('添加用户失败') }
+        if (res.meta.status !== 201) {
+          return this.$message.error('添加用户失败')
+        }
         // 添加成功的提示
         this.$message.success('添加用户成功')
         // 关闭对话框
@@ -201,7 +319,7 @@ export default {
       console.log('=====' + row.mg_state)
       // 发送请求进行状态修改
       const { data: res } = await this.$http.put(
-        `users/${row.id}/state/${row.mg_state}`
+          `users/${row.id}/state/${row.mg_state}`
       )
       // 如果返回状态为异常状态则报错并返回
       if (res.meta.status !== 200) {
@@ -216,9 +334,10 @@ export default {
 </script>
 
 <style scoped>
-  .el-breadcrumb{
+  .el-breadcrumb {
     margin-bottom: 20px;
   }
+
   .text {
     font-size: 14px;
   }
@@ -232,6 +351,7 @@ export default {
     display: table;
     content: "";
   }
+
   .clearfix:after {
     clear: both
   }
@@ -239,10 +359,12 @@ export default {
   .box-card {
     width: 480px;
   }
-  .el-pagination{
+
+  .el-pagination {
     margin-top: 20px;
   }
-  .el-table{
+
+  .el-table {
     margin-top: 20px;
   }
 
